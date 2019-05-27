@@ -1,24 +1,99 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
+    <title>Image Vector Layer</title>
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
+    <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+    <script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
+  </head>
+  <body>
+    <div id="map" class="map"></div>
+    <div id="info">&nbsp;</div>
+    <script>
+      var style = new ol.style.Style({
+        fill: new ol.style.Fill({
+          color: 'rgba(255, 255, 255, 0.6)'
+        }),
+        stroke: new ol.style.Stroke({
+          color: '#319FD3',
+          width: 1
+        }),
+        text: new ol.style.Text()
+      });
 
-<?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+      var map = new ol.Map({
+        layers: [
+          new ol.layer.Vector({
+            renderMode: 'image',
+            source: new ol.source.Vector({
+              url: 'Data/map.geojson',
+              format: new ol.format.GeoJSON()
+            }),
+            style: function(feature) {
+              style.getText().setText(feature.get('name'));
+              return style;
+            }
+          })
+        ],
+        target: 'map',
+        view: new ol.View({
+          center: [0, 0],
+          zoom: 1
+        })
+      });
 
-session_start();
+      var featureOverlay = new ol.layer.Vector({
+        source: new ol.source.Vector(),
+        map: map,
+        style: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: '#f00',
+            width: 1
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(255,0,0,0.1)'
+          })
+        })
+      });
 
-include 'common-data.php';
-?>	
+      var highlight;
+      var displayFeatureInfo = function(pixel) {
 
-<title>WorldMap</title>
+        var feature = map.forEachFeatureAtPixel(pixel, function(feature) {
+          return feature;
+        });
 
-<script src="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/build/ol.js"></script>
-<link rel="stylesheet" href="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/css/ol.css">
+        var info = document.getElementById('info');
+        if (feature) {
+          info.innerHTML = feature.getId() + ': ' + feature.get('name');
+        } else {
+          info.innerHTML = '&nbsp;';
+        }
 
-</head>
-<body>
-Content goes here.
-</body>
+        if (feature !== highlight) {
+          if (highlight) {
+            featureOverlay.getSource().removeFeature(highlight);
+          }
+          if (feature) {
+            featureOverlay.getSource().addFeature(feature);
+          }
+          highlight = feature;
+        }
+
+      };
+
+      map.on('pointermove', function(evt) {
+        if (evt.dragging) {
+          return;
+        }
+        var pixel = map.getEventPixel(evt.originalEvent);
+        displayFeatureInfo(pixel);
+      });
+
+      map.on('click', function(evt) {
+        displayFeatureInfo(evt.pixel);
+      });
+    </script>
+  </body>
 </html>
