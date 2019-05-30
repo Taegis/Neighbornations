@@ -113,6 +113,9 @@
           return;
         }
         var pixel = map.getEventPixel(evt.originalEvent);
+        // var coord = map.getEventCoordinate(evt.originalEvent);
+        // var lonlat = ol.proj.toLonLat(coord);
+        // console.log(lonlat);
         displayFeatureInfo(pixel);
       });
 
@@ -124,8 +127,8 @@
     function getSettlementFeatures(){
       <?php
 
-        //define settlement data string with a starting | so we can add the results of our query
-        $strSEData = '|';
+        //define settlement data string so we can add the results of our query
+        $strSEData = '';
 
         //open connection
         $conn = new mysqli($ServerName, $DBUser, $DBPassword, $Database);
@@ -141,6 +144,9 @@
                   //add the results to strSEData so that we can use it later
                   $strSEData = $strSEData.$row['SEOwner'].';'.$row['SECoordinates'].';'.$row['SEProvince'].'|';
             }
+
+            //remove the final | at the end of the data string
+            $strSEData = substr($strSEData, 0, -1);
 
         }
         else {
@@ -159,7 +165,7 @@
       var x;
       
       //loop through each settlement in the array
-      for (x = 1; x < arrSettlementData.length - 1; ++x) {
+      for (x = 0; x < arrSettlementData.length; ++x) {
         //split the contents of the settlement into another array
         var arrSingleSettlementData = arrSettlementData[x].split(";");
 
@@ -168,22 +174,24 @@
         var strSECoords = arrSingleSettlementData[1];
         var strSEProvinceID = arrSingleSettlementData[2];
 
-        //split the coordinates of the settlement up
+        //split the coordinates of the settlement up and convert to numbers from str
         var arrCoords = strSECoords.split(",");
+        arrCoords[0] = Number(arrCoords[0]);
+        arrCoords[1] = Number(arrCoords[1]);
 
-        //define the ol feature for the settlement
+        //define the ol feature for the settlement - assign the coordinates we got before
         var iconFeature = new ol.Feature({
-          geometry: new ol.geom.Point([0, 0]),
+          geometry: new ol.geom.Point(ol.proj.fromLonLat([arrCoords[0], arrCoords[1]])),
           name: 'Null Island',
           population: 4000,
           rainfall: 500
         });
 
-        //create a style for the settlement - using the coordinates we got earlier
+        //create a style for the settlement
         var iconStyle = new ol.style.Style({
           image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
-            anchor: [arrCoords[0], arrCoords[1]],
-            anchorXUnits: 'pixels',
+            anchor: [0.5, 46],
+            anchorXUnits: 'fraction',
             anchorYUnits: 'pixels',
             src: 'https://openlayers.org/en/v4.6.5/examples/data/icon.png'
           }))
@@ -199,8 +207,6 @@
       return arrFeaturesToReturn;
 
     }
-
-    getSettlementFeatures();
 
     </script>
   </body>
