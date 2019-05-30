@@ -72,12 +72,18 @@ include 'common-data.php';
 		    password: password
 		  },
 		  function(data, status){
-		    alert("Data: " + data + "\nStatus: " + status);
+		    // alert("Data: " + data + "\nStatus: " + status);
+		    if (data == 'Success'){
+		    	window.location.href = "WorldMap.php";
+		    }
+		    else {
+		    	alert('Login information incorrect.');
+		    }
 		  });
 
   		console.log('User is: ' + username);
   		console.log('Password is: ' + password);
-  		console.log('<?php echo $Username; ?>')
+  		console.log('<?php echo $Username; ?>');
   	}
 
   </script>
