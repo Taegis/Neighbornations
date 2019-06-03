@@ -1,0 +1,49 @@
+.sidenav {
+  height: 100%; /* Full-height: remove this if you want "auto" height */
+  width: 20%; /* Set the width of the sidebar */
+  position: fixed; /* Fixed Sidebar (stay in place on scroll) */
+  z-index: 1; /* Stay on top */
+  top: 0; /* Stay at the top */
+  left: 0;
+  background-color: #5c6572; /* Black */
+  overflow-x: hidden; /* Disable horizontal scroll */
+  padding-top: 20px;
+}
+
+.sidenav a {
+  padding: 6px 8px 6px 16px;
+  text-decoration: none;
+  font-size: 25px;
+  color: #818181;
+  display: block;
+}
+
+.main {
+  margin-left: 20%; /* Same as the width of the sidebar */
+  padding: 0px 10px;
+  height: 100%;
+  width: 100%;
+  position: fixed;
+}
+
+.center {
+  text-align: center;
+  align-content: center;
+}
+
+.provinceinfo {
+  width: 80%;
+  height: 40%;
+  margin-left: 10%;
+  background-color: #F3F8FF;
+  padding-top: 5%;
+}
+
+.provinceinfoBottom {
+  width: 80%;
+  height: 40%;
+  margin-left: 10%;
+  margin-top: 5%;
+  background-color: #F3F8FF;
+  padding-top: 5%;
+}
