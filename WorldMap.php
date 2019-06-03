@@ -9,21 +9,56 @@
 
     session_start();
 
+
+    if (empty($_SESSION["Username"])){
+      $_SESSION["Username"] = '';
+      $Username = '';
+    }
+    else{
+      $Username = $_SESSION["Username"];
+    }
+
     include 'common-data.php';
 
 
     ?>
 
     <title>WorldMap</title>
+    <link rel='stylesheet' href='http://netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css'>
     <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
+    <link rel="stylesheet" href="css/MapStyle.css">
     <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
     <script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
   </head>
+
+
   <body>
-    <div id="map" class="map"></div>
-    <div id="info">&nbsp;</div>
+    <div class="sidenav" id="">
+      <div class="center provinceinfo" id='SideTitle'>
+        <span style="color: #21334D;">Province Name - </span><span style="color: #21334D;" id='PrvName'>None</span><br>
+        <span style="color: #21334D;">Owner: </span><span style="color: #21334D;" id='PrvOwner'>None</span><br>
+        <span style="color: #21334D;">Nation: </span><span style="color: #21334D;" id='PrvNation'>None</span>
+      </div>
+
+      <div class="center provinceinfoBottom">
+        <button onclick="onPlaceSettlementClick();">Place Settlement</button>
+      </div>
+
+
+    </div>
+    <div class="main" id="map" class="map"></div>
     <script>
+
+      var Username = '';
+      var USMoney = 0;
+      var USMoney = 0;
+      var FirstTimeLogin = 1;
+      var ToggleSettlementPlace = 0;
+
+      onPageOpen();
+
 
       var style = new ol.style.Style({
         fill: new ol.style.Fill({
@@ -49,13 +84,16 @@
             style: function(feature) {
               style.getText().setText(feature.get('name'));
               return style;
-            }
+            },
+            zIndex: 0
           }),
-          new ol.layer.Vector({
+          SettlementLayer = new ol.layer.Vector({
+            name: 'SettlementLayer',
             source: new ol.source.Vector({
               features: getSettlementFeatures(),
               wrapX: false
-            })
+            }),
+            zIndex: 5
           })
         ],
         target: 'map',
@@ -73,29 +111,54 @@
         map: map,
         style: new ol.style.Style({
           stroke: new ol.style.Stroke({
-            color: '#f00',
+            color: '#0052d6',
             width: 1
           }),
           fill: new ol.style.Fill({
-            color: 'rgba(255,0,0,0.1)'
+            color: 'rgba(0,0,255,0.1)'
           })
-        })
+        }),
+        zIndex: 1
       });
+
+      featureOverlay.setZIndex(1);
 
       var highlight;
       var displayFeatureInfo = function(pixel) {
 
-        var feature = map.forEachFeatureAtPixel(pixel, function(feature) {
-          return feature;
-        });
+        var arrFeaturesAtPixel = [];
 
-        var info = document.getElementById('info');
+        //add each feature to the array
+        var feature = map.forEachFeatureAtPixel(pixel, function(feature) {
+          arrFeaturesAtPixel.push(feature);
+        }
+        );
+
+        //if there is more than one feature at the clicked point, determine which one is the settlement and return that one
+        if (arrFeaturesAtPixel.length > 1) {
+          if (arrFeaturesAtPixel[0].get('fetype') == 'Settlement') {
+            //console.log('Settlement is 1st');
+            feature = arrFeaturesAtPixel[0];
+          }
+          else {
+            //console.log('Settlement is 2nd');
+            feature = arrFeaturesAtPixel[1];
+          }
+        }
+        else {
+          //console.log('No Settlement at click');
+          feature = arrFeaturesAtPixel[0];
+        }
+
+
+        var info = document.getElementById('PrvName');
         if (feature) {
-          info.innerHTML = feature.get('ID') + ': ' + feature.get('name');
+          info.innerHTML = feature.get('name') + " : " + feature.get('fetype');
         } else {
           info.innerHTML = '&nbsp;';
         }
 
+        //highlight the province
         if (feature !== highlight) {
           if (highlight) {
             featureOverlay.getSource().removeFeature(highlight);
@@ -108,20 +171,59 @@
 
       };
 
-      map.on('pointermove', function(evt) {
+      map.on('click', function(evt) {
+
+        //get click pixel and define variables
+        var pixel = map.getEventPixel(evt.originalEvent);
+        var placeCoords;
+        var placeProvince;
+
+        //if the click is to drag the map, ignore it
         if (evt.dragging) {
           return;
         }
-        var pixel = map.getEventPixel(evt.originalEvent);
-        // var coord = map.getEventCoordinate(evt.originalEvent);
-        // var lonlat = ol.proj.toLonLat(coord);
-        // console.log(lonlat);
+
         displayFeatureInfo(pixel);
+
+        if (ToggleSettlementPlace == 1) {
+
+          //get coordinates to place settlement
+          placeCoords = map.getCoordinateFromPixel(pixel);
+          placeCoords = ol.proj.toLonLat(placeCoords);
+          placeCoords = placeCoords.toString();
+
+          //log coordinates(longitude and latitude) on click
+          //console.log(placeCoords);
+
+          //get the province so that we have a province ID to associate with the settlement
+          var feature = map.forEachFeatureAtPixel(pixel, function(feature) {
+            return feature;
+          });
+
+          placeProvince = feature.get('ID');
+
+          //call placeSettlement to check if possible and perform backend duties
+          $.post("QueryInsertUpdate.php",
+            {
+              action: "placeSettlement",
+              placeCoords: placeCoords,
+              placeProvince: placeProvince
+            },
+            function(data, status){
+              // alert("Data: " + data + "\nStatus: " + status);
+              if (data == 'Success'){
+                //refresh page (or add feature... but that's more work)
+                ToggleSettlementPlace = 0;
+                location.reload();
+              }
+              else {
+                console.log(data);
+                ToggleSettlementPlace = 0;
+              }
+            });
+        }
       });
 
-      map.on('click', function(evt) {
-        displayFeatureInfo(evt.pixel);
-      });
 
     //following function returns an array of features (settlements) to include in the map layer
     function getSettlementFeatures(){
@@ -173,6 +275,15 @@
         var strSEName = arrSingleSettlementData[0];
         var strSECoords = arrSingleSettlementData[1];
         var strSEProvinceID = arrSingleSettlementData[2];
+        var strSEColor = '#42ebf4'; 
+
+        if (strSEName == Username) {
+          strSEColor = '#0068FF';
+          FirstTimeLogin = 0;
+        }
+        else {
+          strSEColor = '#31b240';
+        }
 
         //split the coordinates of the settlement up and convert to numbers from str
         var arrCoords = strSECoords.split(",");
@@ -184,12 +295,15 @@
           geometry: new ol.geom.Point(ol.proj.fromLonLat([arrCoords[0], arrCoords[1]])),
           name: 'Null Island',
           population: 4000,
-          rainfall: 500
+          rainfall: 500,
+          fetype: 'Settlement'
         });
 
         //create a style for the settlement
         var iconStyle = new ol.style.Style({
           image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
+            color: strSEColor,
+            crossOrigin: 'anonymous',
             anchor: [0.5, 46],
             anchorXUnits: 'fraction',
             anchorYUnits: 'pixels',
@@ -205,6 +319,60 @@
       }
 
       return arrFeaturesToReturn;
+
+    }
+
+    function onPageOpen(){
+      if ('<?php echo $_SESSION["Username"]; ?>' == '') {
+        window.location.href = "index.php";
+      }
+
+      <?php
+        $strSQLUserData = '';
+
+        //open connection
+        $conn = new mysqli($ServerName, $DBUser, $DBPassword, $Database);
+        if ($conn->connect_error) {
+            die("Connection failed: " . $conn->connect_error);
+        }
+
+        //run query
+        $result = $conn->query("select * from Users where Username = '$Username'");
+        if ($result->num_rows > 0) {
+            // output data of each row
+            while($row = $result->fetch_assoc()) {
+                //add the results to strSEData so that we can use it later
+                $strSQLUserData = $strSQLUserData.$row['Username'].';'.$row['USMoney'].';'.$row['USManpower'].'|';
+            }
+
+            //remove the final | at the end of the data string
+            $strSQLUserData = substr($strSQLUserData, 0, -1);
+
+        }
+        else {
+            //echo "0 results";
+        }
+        $conn->close();
+      ?>
+
+      var strUserData = "<?php echo $strSQLUserData; ?>";
+      var arrUserData = strUserData.split(";");
+
+      Username = arrUserData[0];
+      USMoney = arrUserData[1];
+      USManpower = arrUserData[2];
+
+    }
+
+    function onPlaceSettlementClick() {
+
+      if (FirstTimeLogin == 1){
+        alert("Click somewhere on the map to place your settlement");
+        ToggleSettlementPlace = 1;
+      }
+      else {
+        alert("You've already placed your settlement");
+      }
 
     }
 

@@ -78,6 +78,7 @@ include 'common-data.php';
 		    }
 		    else {
 		    	alert('Login information incorrect.');
+		    	console.log(data);
 		    }
 		  });
 
