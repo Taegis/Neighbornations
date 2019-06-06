@@ -24,9 +24,9 @@
     ?>
 
     <title>WorldMap</title>
-    <link rel='stylesheet' href='http://netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css'>
     <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
     <link rel="stylesheet" href="css/MapStyle.css">
+    <link rel='stylesheet' href='http://netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css'>
     <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
     <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
     <script src="https://openlayers.org/en/v4.6.5/build/ol.js"></script>
@@ -35,6 +35,18 @@
 
 
   <body>
+    <div class="headerbar">
+      <div>
+        <span>Username:</span>
+        <span id='Username' class="headerbarinfo"></span>
+        <span>Money:</span>
+        <span id='Money' class="headerbarinfo"></span>
+        <span>Manpower:</span>
+        <span id='Manpower' class="headerbarinfo"></span>
+        <button id='Logout' class="headerLogout">Logout</button>
+      </div>
+
+    </div>
     <div class="sidenav" id="">
       <div class="center provinceinfo" id='SideTitle'>
         <span style="color: #21334D;">Province Name - </span><span style="color: #21334D;" id='PrvName'>None</span><br>
@@ -293,9 +305,7 @@
         //define the ol feature for the settlement - assign the coordinates we got before
         var iconFeature = new ol.Feature({
           geometry: new ol.geom.Point(ol.proj.fromLonLat([arrCoords[0], arrCoords[1]])),
-          name: 'Null Island',
-          population: 4000,
-          rainfall: 500,
+          SEOwner: strSEName,
           fetype: 'Settlement'
         });
 
@@ -361,6 +371,10 @@
       Username = arrUserData[0];
       USMoney = arrUserData[1];
       USManpower = arrUserData[2];
+
+      document.getElementById("Username").innerHTML = Username;
+      document.getElementById("Money").innerHTML = USMoney;
+      document.getElementById("Manpower").innerHTML = USManpower;
 
     }
 
